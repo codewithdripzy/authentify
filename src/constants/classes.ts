@@ -1,3 +1,4 @@
+import { MySQL, MongoDB, PostGres, MariaDB, SQLite, OracleDB, Snowflake, MicrosoftSQLServer } from "../config/database";
 import { DatabaseType } from "./enums";
 import { AuthenticatorModelConfiguration, SqlType } from "./interface";
 
@@ -16,12 +17,14 @@ class Database{
 class AuthModel{
     name : string;
     description : string;
-    fields : SqlType[]
+    fields : SqlType[];
+    database : MySQL | MongoDB | PostGres | MariaDB | SQLite | OracleDB | Snowflake | MicrosoftSQLServer;
 
-    constructor({ name, description, fields } : AuthenticatorModelConfiguration){
+    constructor({ name, description, fields, database } : AuthenticatorModelConfiguration){
         this.name = name;
         this.description = description;
         this.fields = fields;
+        this.database = database;
     }
 
     findOne() : boolean{

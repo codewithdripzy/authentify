@@ -4,7 +4,7 @@ import express, { NextFunction, Request, Response, Router } from "express";
 import { Mongoose } from "mongoose";
 import { MongoClient } from "mongodb";
 import { AuthModel, Database } from "./constants/classes";
-import { Connection, ResultSetHeader } from "mysql2/promise";
+import { Connection, FieldPacket, ResultSetHeader } from "mysql2/promise";
 import { DatabaseType, MongoDriverType } from "./constants/enums";
 import { AuthenticatorController } from "./constants/declarations";
 import { defaulFallback, noRouteFound, verifyAPI } from "./controllers/default";
@@ -19,6 +19,8 @@ class Authenticator{
     public database : MySQL | MongoDB | PostGres | MariaDB | SQLite | OracleDB | Snowflake | MicrosoftSQLServer;
     public models : AuthModel[];
     public routes : Router[] = [];
+    public controllers : AuthenticatorController[] = [];
+    public base_path = "/api/v:version"
 
     constructor({ name, version, database, models } : AuthenticatorConfiguration){
         this.app = express();
@@ -31,6 +33,14 @@ class Authenticator{
         this.models = models;
 
         this.setup();
+    }
+
+    public setRoutes(routes : Router[]){
+        this.routes = routes;
+    }
+
+    public setControllers(controllers : AuthenticatorController[]){
+        this.controllers = controllers;
     }
 
     private async setup(){
@@ -83,92 +93,55 @@ class Authenticator{
         }
     }
 
-    private setupRoutes(){
-        // set version defined by developer
-        // setup default and fallback routes
-        this.app.use("/api/v:version/", (req : Request, res : Response, next : NextFunction)=>{
-            req.body = {
-                v : this.version
-            }
-            verifyAPI(req, res, next)
+    private setupRoutes() {
+        this.app.use(this.base_path, (req: Request, res: Response, next: NextFunction) => {
+            req.body.v = this.version;
+            verifyAPI(req, res, next);
         });
-        this.app.all("/api/v:version/", (req : Request, res : Response, next : NextFunction)=>{
-            // user defined routes
-            this.routes.map(route => {
-                route(req, res, next);
-                // return route.use("/", (req : Request, res : Response) => {
-                //     console.log(req.path);
-                // });
-            });
-            this.app.use("/", noRouteFound);
+
+        this.routes.forEach(route => {
+            this.app.use(route);
         });
+
+        // Fallback route for 404
+        this.app.use("/", noRouteFound);
     }
 
-    public route(path : string){
-        const router : Router = express.Router();
+    public route(path: string) {
+        const router: Router = express.Router();
 
-        return { 
-            get(controller : ()=> void){
-                // router.get(path, callback);
+        return {
+            get: (controller: AuthenticatorController) => {
+                router.get(`${this.base_path}${path}`, (req: Request, res: Response) => controller(req, res));
+                return router;
             },
-
-            post(controller : AuthenticatorController) : Router{
-                // const expressController = 
-                return router.post(path, (req : Request, res : Response) => {
-                    controller(req, res);
-                });
+            post: (controller: AuthenticatorController) => {
+                router.post(`${this.base_path}${path}`, (req: Request, res: Response) => controller(req, res));
+                return router;
             },
-
-            delete(controller : ()=> void){
-                // router.get(path, callback);
+            delete: (controller: AuthenticatorController) => {
+                router.delete(`${this.base_path}${path}`, (req: Request, res: Response) => controller(req, res));
+                return router;
             },
-
-            put(controller : ()=> void){
-                // router.get(path, callback);
+            put: (controller: AuthenticatorController) => {
+                router.put(`${this.base_path}${path}`, (req: Request, res: Response) => controller(req, res));
+                return router;
             },
-
-            patch(controller : ()=> void){
-                // router.get(path, callback);
-            },
-
-            options(controller : ()=> void){
-                // router.get(path, callback);
-            },
-
-            head(controller : ()=> void){
-                // router.get(path, callback);
-            },
-
-            connect(controller : ()=> void){
-                // router.get(path, callback);
-            },
-
-            trace(controller : ()=> void){
-                // router.get(path, callback);
-            },
-
-            all(controller : ()=> void){
-                // router.get(path, callback);
-            },
-
-            use(controller : ()=> void){
-                // router.get(path, callback);
-            },
-
+            
             route(path : string) : Function{
                 return this.route(path);
             }
         };
     }
 
-    public controller({} : AuthenticatorControllerConfiguration) : AuthenticatorController{
-        return (req : Request, res : Response) => {
-            try{
-                res.send("Hello World");
-            }catch(err){
-                res.status(500).send("Internal Server Error");
+    public controller(config : AuthenticatorControllerConfiguration) : AuthenticatorController{
+        return (req: Request, res: Response) => {
+            try {
+                config.handler(config.model, req, res);
+            } catch (err) {
+                return res.status(500).send("Internal Server Error");
             }
-        }
+        };
     }
 
     public listen(port : number){
@@ -187,8 +160,7 @@ class DbORM{
 
     async createDatabase(datb : string) : Promise<boolean> {
         try {
-            console.log("Creating database...");
-
+            // console.log("Creating database...");
             this.database.database = undefined;
 
             switch(this.database.type){
@@ -284,6 +256,37 @@ class DbORM{
                 }
             default:
                 return false;
+        }
+    }
+
+    async find(table_name : string, fields : { [key : string] : string }) : Promise<boolean>{
+        return true;
+    }
+
+    async findOne(table_name : string, fields : { [key : string] : string }) : Promise<[boolean, { [key : string] : any}]>{
+        try {
+            switch (this.database.type) {
+                case DatabaseType.MYSQL:
+                    const db = await this.database.getConnection() as unknown as Connection;
+                    let parsedSql = "";
+
+                    for(const key in fields){
+                        parsedSql += `${key} = '${fields[key]}'` + (Object.keys(fields).indexOf(key) < Object.keys(fields).length - 1 ? " AND " : "");
+                    }
+
+                    const query = `SELECT * FROM ${table_name} WHERE ${parsedSql} LIMIT 0,1;`;
+                    const [res, field] = await db!.query(query) as [{ [key : string] : any }[], FieldPacket[]];
+
+                    if(res && res.length > 0){
+                        return [true, res[0] ?? {}] as [boolean, { [key : string] : any }];
+                    }
+                    return [false, []];
+                default:
+                    return [false, []];
+            }
+        } catch (error) {
+            console.log(error);
+            return [false, []];
         }
     }
     

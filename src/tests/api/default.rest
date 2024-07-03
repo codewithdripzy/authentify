@@ -1,2 +1,2 @@
-GET http://localhost:3000/api/v1/
+GET http://localhost:3000/api/v1/auth/login
 Content-Type: application/json

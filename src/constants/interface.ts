@@ -1,5 +1,6 @@
+import { Request, Response, Router } from "express";
 import { MySQL, MongoDB, PostGres, MariaDB, SQLite, OracleDB, Snowflake, MicrosoftSQLServer } from "../config/database";
-import { AuthModel } from "./classes";
+import { AuthModel, Database } from "./classes";
 import { MongoDriverType } from "./enums";
 
 interface AuthenticatorConfiguration{
@@ -35,6 +36,7 @@ interface AuthenticatorModelConfiguration{
     name: string;
     description: string;
     fields: SqlType[];
+    database : MySQL | MongoDB | PostGres | MariaDB | SQLite | OracleDB | Snowflake | MicrosoftSQLServer;
 }
 
 interface SqlType{
@@ -60,7 +62,10 @@ interface ORMConfiguration{
 // }
 
 interface AuthenticatorControllerConfiguration{
-    
+    name : string;
+    description : string;
+    model : AuthModel;
+    handler : (model : AuthModel, req : Request, res : Response) => void;
 }
 
 export type { 
