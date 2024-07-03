@@ -1,22 +1,31 @@
 import cors from "cors";
-import express, { Request, Response, Router } from "express";
+import SqlParser from "./utils/sql";
+import express, { NextFunction, Request, Response, Router } from "express";
+import { Mongoose } from "mongoose";
+import { MongoClient } from "mongodb";
+import { AuthModel, Database } from "./constants/classes";
+import { Connection, ResultSetHeader } from "mysql2/promise";
+import { DatabaseType, MongoDriverType } from "./constants/enums";
+import { AuthenticatorController } from "./constants/declarations";
+import { defaulFallback, noRouteFound, verifyAPI } from "./controllers/default";
 import { AuthenticatorConfiguration, AuthenticatorControllerConfiguration, ORMConfiguration } from "./constants/interface";
 import { MySQL, MongoDB, PostGres, MariaDB, SQLite, OracleDB, Snowflake, MicrosoftSQLServer } from "./config/database";
-import { AuthenticatorController } from "./constants/declarations";
-import { AuthModel, Database } from "./constants/classes";
-import { ResultSetHeader } from "mysql2";
+import { handleDBError } from "./utils/error";
 
 class Authenticator{
     protected app : express.Application;
+    public name : string;
     public version : number;
     public database : MySQL | MongoDB | PostGres | MariaDB | SQLite | OracleDB | Snowflake | MicrosoftSQLServer;
     public models : AuthModel[];
+    public routes : Router[] = [];
 
-    constructor({ version, database, models } : AuthenticatorConfiguration){
+    constructor({ name, version, database, models } : AuthenticatorConfiguration){
         this.app = express();
         this.app.use(express.json());
         this.app.use(cors());
 
+        this.name = name;
         this.version = version;
         this.database = database;
         this.models = models;
@@ -26,55 +35,72 @@ class Authenticator{
 
     private async setup(){
         if(await this.setupDatabase()){
-            this.setupModels();
+            if(this.setupModels()){
+                this.setupRoutes();
+            }
         }
+        // else{
+        //     console.log(`Something went wrong 😑, unable to connect to '${this.database.type}' database.\ncheck database your configuration and try again 😪`);
+        // }
     }
 
-    private async setupDatabase() : Promise<boolean>{
+    private async setupDatabase() : Promise<boolean>{        
         try {
             // try connecting to database
             const connectionState = await this.database.getConnection();
             
-            if(connectionState){
+            if(connectionState){                
                 console.log(`Connected to database 🚀🎉`);
                 return true;
             }
 
             return false;
-            
         } catch (error : { code: string } | any) {
             console.error("Unable to connect to database 😪");
+            const res = handleDBError(this.database, error, () => this.setupDatabase());
 
-            // check for errror code for mysql
-            if(error.code && error!.code === "ECONNREFUSED"){
-                console.error("Make sure your database server is running 👨‍💻");
-            }else if(error.code && error!.code === "ER_ACCESS_DENIED_ERROR"){
-                console.error("Make sure your database credentials are correct 👨‍💻");
-            }else if(error.code && error!.code === "ER_BAD_DB_ERROR"){
-                console.error("Database was not found! don't fret, we're creating one for you 👨‍💻");
-                // create database if not exists
-                if(await new DbORM(this.database).createDatabase(this.database.database as string)){
-                    this.setupDatabase();
-                    return true;
+            return res;
+        }
+    }
+
+    private setupModels() : boolean{
+        try {
+            // loop through models and create tables
+            const db = new DbORM(this.database);
+
+            this.models.forEach(async (model : AuthModel) => {
+                if(!await db.tableExists(model.name)){
+                    db.createTable({
+                        table_name: model.name, 
+                        fields: model.fields
+                    });
                 }
-                console.error("Unable to create database 😪");
-                return false;
-            }
+            });
+
+            return true;
+        } catch (error) {
             return false;
         }
     }
 
-    private setupModels(){
-        // loop through models and create tables
-        const db = new DbORM(this.database);
-
-        this.models.forEach((model : AuthModel) => {
-            if(!db.tableExists(model.name)){
-                db.createTable({
-                    table_name: model.name, 
-                    fields: model.fields
-                });
+    private setupRoutes(){
+        // set version defined by developer
+        // setup default and fallback routes
+        this.app.use("/api/v:version/", (req : Request, res : Response, next : NextFunction)=>{
+            req.body = {
+                v : this.version
             }
+            verifyAPI(req, res, next)
+        });
+        this.app.all("/api/v:version/", (req : Request, res : Response, next : NextFunction)=>{
+            // user defined routes
+            this.routes.map(route => {
+                route(req, res, next);
+                // return route.use("/", (req : Request, res : Response) => {
+                //     console.log(req.path);
+                // });
+            });
+            this.app.use("/", noRouteFound);
         });
     }
 
@@ -132,7 +158,7 @@ class Authenticator{
             route(path : string) : Function{
                 return this.route(path);
             }
-        }
+        };
     }
 
     public controller({} : AuthenticatorControllerConfiguration) : AuthenticatorController{
@@ -159,27 +185,35 @@ class DbORM{
         this.database = database
     }
 
-    async createDatabase(database : string) : Promise<boolean> {
+    async createDatabase(datb : string) : Promise<boolean> {
         try {
             console.log("Creating database...");
 
             this.database.database = undefined;
-            const db = await this.database.getConnection();
 
             switch(this.database.type){
-                case "mysql":
+                case DatabaseType.MYSQL:
                     // create database if not exists
-                    const [res, err] = await db.query(`CREATE DATABASE IF NOT EXISTS ${database}`) as [ResultSetHeader, []];
+                    const db = await this.database.getConnection() as unknown as Connection;
+                    const [res, err] = await db!.query(`CREATE DATABASE IF NOT EXISTS ${datb}`) as [ResultSetHeader, []];
 
                     if(err) return false && console.log("Unfortunately, we couldn't create the database 😪", "\n Instead we got this error: ", err);
                     if(res){
-                        console.log(`Database '${database}' created successfully 🚀🎉`);
+                        console.log(`Database '${datb}' created successfully 🚀🎉`);
                         return true;
                     }
 
                     break;
-                case "mongodb":
-                    break;
+                case DatabaseType.MONGODB:
+                    const database = this.database as MongoDB;
+
+                    if(database.driver == MongoDriverType.MONGOOSE){
+                        const db = this.database.getConnection() as unknown as Mongoose;
+                        return false;
+                    }else{
+                        const db = this.database.getConnection() as unknown as MongoClient;
+                        return false;
+                    }
             //     case "postgresql":
             //         break;
             //     case "mariadb":
@@ -200,11 +234,18 @@ class DbORM{
         }
     }
 
-    createTable({ table_name, fields } : ORMConfiguration){
-        // this.database.getConnection().query("CREATE TABLE IF NOT EXISTS users (id INT AUTO_INCREMENT PRIMARY KEY, name VARCHAR(255), email VARCHAR(255), password VARCHAR(255), createdAt TIMESTAMP, updatedAt TIMESTAMP, deletedAt TIMESTAMP)");
+    async createTable({ table_name, fields } : ORMConfiguration){
         switch(this.database.type){
-            case "mysql":
-        //         this.database.getConnection().query("CREATE TABLE IF NOT EXISTS users (id INT AUTO_INCREMENT PRIMARY KEY, name VARCHAR(255), email VARCHAR(255), password VARCHAR(255), createdAt TIMESTAMP, updatedAt TIMESTAMP, deletedAt TIMESTAMP)");
+            case DatabaseType.MYSQL:
+                const db = await this.database.getConnection() as unknown as Connection;
+                let query = `CREATE TABLE IF NOT EXISTS ${table_name} (id INT(11) UNIQUE PRIMARY KEY AUTO_INCREMENT,`;
+                const parsedSql = SqlParser.parse(fields);
+
+                query += (parsedSql + ");");
+                
+                const [res, flds] = await db!.query(query) as [[], []];
+                console.log(res);
+                
                 break;
         //     case "mongodb":
         //         break;
@@ -223,9 +264,27 @@ class DbORM{
         }
     }
 
-    tableExists(table_name : string) : boolean{
-        // this.database.getConnection().query("SHOW TABLES LIKE 'users'");
-        return false;
+    async tableExists(table_name : string) : Promise<boolean>{
+        switch (this.database.type) {
+            case DatabaseType.MYSQL:
+                try {
+                    const db = await this.database.getConnection() as unknown as Connection;
+                    const [res, field] = await db!.query(`SHOW TABLES LIKE '${table_name}'`) as [[], []];
+        
+                    if(res && res.length > 0){
+                        return true;
+                    }
+                    
+                    return false;
+                } catch (error) {
+                    console.log("Somthing went wrong 😥");
+                    
+                    console.log(error);
+                    return false;
+                }
+            default:
+                return false;
+        }
     }
     
     dropTable(){
@@ -247,4 +306,4 @@ class Oauth{
     }
 }
 
-export { Authenticator, DbORM, Oauth};
+export { Authenticator, DbORM, Oauth };

@@ -1,16 +1,46 @@
-// declare const Str : String;
-// declare const Int : Number;
-// declare const Float : Number;
-// declare const Bool : Boolean;
-// declare const Date : Date;
-// declare const ObjectId : String;
-// declare const Array : Array<any>;
-// declare const Object : Object;
-// declare const Any : any;
-// declare const Null : null;
-// declare const Undefined : undefined;
-// declare const Symbol : Symbol;
-// declare const BigInt : BigInt;
-// declare const Function : Function;
-
-
+// http response code
+const HTTP_RESPONSE_CODE = {
+    OK: 200,
+    CREATED: 201,
+    NO_CONTENT: 204,
+    BAD_REQUEST: 400,
+    UNAUTHORIZED: 401,
+    FORBIDDEN: 403,
+    NOT_FOUND: 404,
+    CONFLICT: 409,
+    INTERNAL_SERVER_ERROR: 500,
+  };
+  
+  const APP_RESPONSE_CODE = {
+      API : {
+          INVALID_VERSION : 'APP_API/INVALID_VERSION',
+          INVALID_METHOD : 'APP_API/INVALID_METHOD',
+          INVALID_ENDPOINT : 'APP_API/INVALID_ENDPOINT',
+          INVALID_REQUEST : 'APP_API/INVALID_REQUEST',
+          INVALID_RESPONSE : 'APP_API/INVALID_RESPONSE',
+          INVALID_RESPONSE_FORMAT : 'APP_API/INVALID_RESPONSE_FORMAT',
+          INVALID_RESPONSE_STATUS : 'APP_API/INVALID_RESPONSE_STATUS',
+          INVALID_RESPONSE_DATA : 'APP_API/INVALID_RESPONSE_DATA',
+          INVALID_RESPONSE_MESSAGE : 'APP_API/INVALID_RESPONSE_MESSAGE',
+          INVALID_RESPONSE_CODE : 'APP_API/INVALID_RESPONSE_CODE',
+          INVALID_RESPONSE_ERROR : 'APP_API/INVALID_RESPONSE_ERROR',
+          INVALID_RESPONSE_ERROR_CODE : 'APP_API/INVALID_RESPONSE_ERROR_CODE',
+          INVALID_RESPONSE_ERROR_MESSAGE : 'APP_API/INVALID_RESPONSE_ERROR_MESSAGE',
+          INVALID_RESPONSE_ERROR_DATA : 'APP_API/INVALID_RESPONSE_ERROR_DATA',
+          INVALID_RESPONSE_ERROR_STATUS : 'APP_API/INVALID_RESPONSE_ERROR_STATUS',
+          INVALID_RESPONSE_ERROR_FORMAT : 'APP_API/INVALID_RESPONSE_ERROR_FORMAT',
+          INVALID_RESPONSE_ERROR_TYPE : 'APP_API/INVALID_RESPONSE_ERROR_TYPE',
+          INVALID_RESPONSE_ERROR_METHOD : 'APP_API/INVALID_RESPONSE_ERROR_METHOD',
+          INVALID_RESPONSE_ERROR_ENDPOINT : 'APP_API/INVALID_RESPONSE_ERROR_ENDPOINT',
+      },
+      VERIFICATION : {
+          BAD_REQUEST : "VIDEEO_VERIFY/BAD_REQUEST"
+      },
+      AUTH : {
+          INVALID_TOKEN : 'VIDEEO_AUTH_001',
+          INVALID_REFRESH_TOKEN : 'VI',
+          ACCOUNT_NOT_FOUND: "VIDEEO_AUTH/ACCOUNT_NOT_FOUND"
+      }
+  }
+  
+  export { HTTP_RESPONSE_CODE, APP_RESPONSE_CODE }

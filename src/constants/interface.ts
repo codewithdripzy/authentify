@@ -1,10 +1,12 @@
 import { MySQL, MongoDB, PostGres, MariaDB, SQLite, OracleDB, Snowflake, MicrosoftSQLServer } from "../config/database";
 import { AuthModel } from "./classes";
+import { MongoDriverType } from "./enums";
 
 interface AuthenticatorConfiguration{
-    version: number,
-    database:  MySQL | MongoDB | PostGres | MariaDB | SQLite | OracleDB | Snowflake | MicrosoftSQLServer,
-    models: AuthModel[]
+    name : string;
+    version: number;
+    database:  MySQL | MongoDB | PostGres | MariaDB | SQLite | OracleDB | Snowflake | MicrosoftSQLServer;
+    models: AuthModel[];
 }
 
 interface MySQLConfiguration{
@@ -17,15 +19,33 @@ interface MySQLConfiguration{
     sslKey?: string;
 }
 
+interface MongoDBConfiguration{
+    driver?: MongoDriverType;
+    uri? : string;
+    host: string;
+    user: string;
+    password: string;
+    database: string;
+    port: number;
+    ssl?: boolean;
+    sslKey?: string;
+}
+
 interface AuthenticatorModelConfiguration{
     name: string;
     description: string;
-    fields: { [key: string]: any};
+    fields: SqlType[];
+}
+
+interface SqlType{
+    field : string,
+    type : string,
+    length? : number,
 }
 
 interface ORMConfiguration{
     table_name: string;
-    fields: { [key: string]: any};
+    fields: SqlType[];
 }
 
 
@@ -43,4 +63,12 @@ interface AuthenticatorControllerConfiguration{
     
 }
 
-export type { AuthenticatorConfiguration, AuthenticatorModelConfiguration, AuthenticatorControllerConfiguration, MySQLConfiguration, ORMConfiguration };
+export type { 
+    AuthenticatorConfiguration,
+    AuthenticatorModelConfiguration,
+    AuthenticatorControllerConfiguration,
+    MySQLConfiguration,
+    MongoDBConfiguration,
+    ORMConfiguration,
+    SqlType
+};

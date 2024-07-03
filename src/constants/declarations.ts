@@ -3,5 +3,6 @@ import { ErrorPacketParams } from "mysql2"
 import { Error as MongooseError } from "mongoose";
 
 declare type AuthenticatorController = (req : Request, res : Response) => void;
-declare type DatabaseError = MongooseError 
+declare type DatabaseError = MongooseError;
+
 export type { AuthenticatorController };

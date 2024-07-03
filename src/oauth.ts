@@ -1,18 +1,21 @@
-class Google {
+import { NextFunction, Request, Response } from "express"
+import { AuthenticatorController } from "./constants/declarations"
+
+class GoogleAuth {
 
 }
 
-class Facebook {
+class FacebookAuth {
 
 }
 
-class Twitter {
+class TwitterAuth {
 
 }
 
-class Github {
+class GithubAuth {
     
 }
 
 
-export { Google, Facebook, Twitter, Github }
+export { GoogleAuth, FacebookAuth, TwitterAuth, GithubAuth }

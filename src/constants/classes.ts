@@ -1,5 +1,5 @@
 import { DatabaseType } from "./enums";
-import { AuthenticatorModelConfiguration } from "./interface";
+import { AuthenticatorModelConfiguration, SqlType } from "./interface";
 
 class Database{
     name : string;
@@ -16,12 +16,20 @@ class Database{
 class AuthModel{
     name : string;
     description : string;
-    fields : { [key: string]: any }
+    fields : SqlType[]
 
     constructor({ name, description, fields } : AuthenticatorModelConfiguration){
         this.name = name;
         this.description = description;
         this.fields = fields;
+    }
+
+    findOne() : boolean{
+        return false;
+    }
+
+    fieldExists(){
+
     }
 }
 

@@ -9,4 +9,9 @@ enum DatabaseType{
     MARIADB = 'mariadb',
 }
 
-export { DatabaseType };
+enum MongoDriverType{
+    MONGOOSE = "mongoose",
+    MONGODB = "mongodb"
+}
+
+export { DatabaseType, MongoDriverType };
