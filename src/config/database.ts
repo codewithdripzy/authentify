@@ -72,11 +72,9 @@ class MongoDB extends Database{
 
     async getConnection() : Promise<MongoClient | Mongoose | null> {
         if(this.driver == MongoDriverType.MONGOOSE){
-            if(this.uri){                    
-                return await connect(this.uri, {
-                    dbName: this.database,
-                    auth : {}
-                });
+            if(this.uri){
+                // print
+                return await connect(this.uri);
             }else if(this.user && this.password){
                 return await connect(`mongodb+srv://${this.user}:${this.password}@${this.host}/${this.database}/?retryWrites=true&w=majority`, {
                 });

@@ -68,6 +68,10 @@ interface AuthenticatorControllerConfiguration{
     handler : (model : AuthModel, req : Request, res : Response) => void;
 }
 
+interface ModelConfiguration{
+    secret : string;
+}
+
 export type { 
     AuthenticatorConfiguration,
     AuthenticatorModelConfiguration,
@@ -75,5 +79,6 @@ export type {
     MySQLConfiguration,
     MongoDBConfiguration,
     ORMConfiguration,
-    SqlType
+    SqlType,
+    ModelConfiguration
 };
