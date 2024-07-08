@@ -27,6 +27,9 @@ const EmailPassswordAuthNoVerification = async (model : AuthModel, req : Request
                         if(state){
                             // check if password is correct
                             if(psw.verify(password, queryRes.password)){
+                                const token = jwt.sign({ email, password, access_code: queryRes.access_code }, model.options?.secret ?? "", { expiresIn: "1d" });
+                                const refreshToken = jwt.sign({ token }, model.options?.secret ?? "", { expiresIn: "7d" });
+
                                 const data : {[key : string] : any}= {};
 
                                 // remove password and access_code fields from queryRes
@@ -35,6 +38,9 @@ const EmailPassswordAuthNoVerification = async (model : AuthModel, req : Request
                                         data[key] = queryRes[key];
                                     }
                                 }
+
+                                data["token"] = token;
+                                data["refreshToken"] = refreshToken;
 
                                 return res.status(200).json({
                                     success: true,
@@ -79,6 +85,8 @@ const EmailPassswordAuthNoVerification = async (model : AuthModel, req : Request
             });
         }
     } catch (error) {
+        console.log(error);
+        
         return res.status(400).json({
             error: true,
             message : "Something went wrong 🥲",
@@ -111,6 +119,8 @@ const EmailPasswordAuthWithVerification = async (model : AuthModel, req : Reques
                                 const token = jwt.sign({ email, password, access_code: queryRes.access_code }, model.options?.secret ?? "", { expiresIn: "1d" });
                                 const data : {[key : string] : any}= {};
 
+                                console.log(token);
+                                
                                 // if(){
 
                                 // }

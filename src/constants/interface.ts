@@ -37,6 +37,7 @@ interface AuthenticatorModelConfiguration{
     description: string;
     fields: SqlType[];
     database : MySQL | MongoDB | PostGres | MariaDB | SQLite | OracleDB | Snowflake | MicrosoftSQLServer;
+    options? : ModelConfiguration;
 }
 
 interface SqlType{

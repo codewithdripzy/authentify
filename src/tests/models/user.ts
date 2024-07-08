@@ -1,18 +1,25 @@
-import { MariaDB, MicrosoftSQLServer, MongoDB, MySQL, OracleDB, PostGres, Snowflake, SQLite } from "../../config/database";
 import { AuthModel } from "../../constants/classes";
+import { MariaDB, MicrosoftSQLServer, MongoDB, MySQL, OracleDB, PostGres, Snowflake, SQLite } from "../../config/database";
+import dotenv from "dotenv";
 
 class Model{
     database : MySQL | MongoDB | PostGres | MariaDB | SQLite | OracleDB | Snowflake | MicrosoftSQLServer;
 
     constructor(database : MySQL | MongoDB | PostGres | MariaDB | SQLite | OracleDB | Snowflake | MicrosoftSQLServer){
+        dotenv.config();
         this.database = database;
     }
+
+    
 
     user() : AuthModel {
         const user = new AuthModel({
             name: "user",
             description: "User model",
             database: this.database,
+            options: {
+                secret: process.env.USER_MODEL_SECRET ?? "",
+            },
             fields : [
                 {
                     field : "id",

@@ -21,11 +21,12 @@ class AuthModel{
     database : MySQL | MongoDB | PostGres | MariaDB | SQLite | OracleDB | Snowflake | MicrosoftSQLServer;
     options? : ModelConfiguration
 
-    constructor({ name, description, fields, database } : AuthenticatorModelConfiguration){
+    constructor({ name, description, fields, database, options } : AuthenticatorModelConfiguration){
         this.name = name;
         this.description = description;
         this.fields = fields;
         this.database = database;
+        this.options = options;
     }
 
     findOne() : boolean{

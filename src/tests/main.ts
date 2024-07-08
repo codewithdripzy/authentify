@@ -15,7 +15,7 @@ const auth = new Authenticator({
     name : "Authify",
     version: 1,
     database: mongo,
-    models : [],
+    models : [usr],
 });
 
 
