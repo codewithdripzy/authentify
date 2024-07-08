@@ -2,7 +2,7 @@ import { MongoDB, MySQL } from "../../config/database";
 import { MongoDriverType } from "../../constants/enums";
 
 // test for mysql database
-export const mysqldb =  new MySQL({
+export const mysqldb = new MySQL({
     host: "localhost",
     user: "root",
     password: "",

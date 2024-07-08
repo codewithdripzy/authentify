@@ -177,13 +177,14 @@ class DbORM{
 
                     break;
                 case DatabaseType.MONGODB:
+                    
                     const database = this.database as MongoDB;
 
                     if(database.driver == MongoDriverType.MONGOOSE){
-                        const db = this.database.getConnection() as unknown as Mongoose;
+                        const db = await this.database.getConnection() as unknown as Mongoose;
                         return false;
                     }else{
-                        const db = this.database.getConnection() as unknown as MongoClient;
+                        const db = await this.database.getConnection() as unknown as MongoClient;
                         return false;
                     }
             //     case "postgresql":
@@ -281,13 +282,33 @@ class DbORM{
                         return [true, res[0] ?? {}] as [boolean, { [key : string] : any }];
                     }
                     return [false, []];
+                
+                case DatabaseType.MONGODB:
+                    const database = this.database as MongoDB;
+
+                    if(database.driver == MongoDriverType.MONGODB){
+                        const mongodb = await this.database.getConnection() as unknown as MongoClient;
+                        // console.log(mongodb.);
+                    }else if(database.driver == MongoDriverType.MONGOOSE){
+                        const mongoose = await this.database.getConnection() as unknown as Mongoose;
+                    }else{
+                        // invalid driver
+                        throw [false, []] && console.log("Invalid Mongo driver provided");
+                    }
+                    
                 default:
+                    
+                    
                     return [false, []];
             }
         } catch (error) {
             console.log(error);
             return [false, []];
         }
+    }
+
+    async add(table_name : string, values : { [key : string] : string }) : Promise<[boolean, { [key : string] : any}]>{
+        return [false, {}];
     }
     
     dropTable(){

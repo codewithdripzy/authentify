@@ -36,6 +36,14 @@ class AuthModel{
     fieldExists(){
 
     }
+
+    validate(reqBody : object) : [boolean, string[]]{
+        for(const i in this.fields){
+            return [false, []];
+        }
+
+        return [false, []];
+    }
 }
 
 class AuthController{

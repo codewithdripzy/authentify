@@ -1,10 +1,9 @@
 import { Request, Response } from "express"
-import { AuthModel } from "../constants/classes";
-import { DbORM } from "..";
+import { AuthModel } from "../../constants/classes";
+import { DbORM } from "../../";
 import { Password, Validator } from "auth-validify";
-import JWT from "../utils/jwt";
-import AuthMailer from "../utils/mailer";
-import { HTTP_RESPONSE_CODE } from "../constants/values";
+import JWT from "../../utils/jwt";
+import AuthMailer from "../../utils/mailer";
 
 const jwt = new JWT();
 
@@ -184,38 +183,9 @@ const EmailPasswordAuthWithVerification = async (model : AuthModel, req : Reques
     }
 }
 
-
 // Registeration with email verifcation
-const RegistrationWithEmailVerifcation = async (model : AuthModel, req : Request, res : Response) => {
-    try {
-        const mailer = new AuthMailer();
-        const validator = new Validator();
-        const psw = new Password();
-        const db = new DbORM(model.database);
+const RegisterationWithEmailVerifcation = async (model : AuthModel, req : Request, res : Response) => {
 
-        const [state, err] = model.validate(req.body);
-        // check for all model values except primary key and optional values
-        if(state){
-            const [state, data] = await db.add(model.name, req.body);
-
-            if(state){
-                // data was successfully added to table, send mail to user
-                
-            }else{
-                res.status(HTTP_RESPONSE_CODE.INTERNAL_SERVER_ERROR).json({
-                    message: "Something went wrong while creating your account, Try again"
-                });
-            }
-        }else{
-            res.status(HTTP_RESPONSE_CODE.BAD_REQUEST).json({
-                message: "Fill out all required fields, we found some missing fields like " + err.join(", "),
-            })
-        }
-    } catch (error) {
-        res.status(HTTP_RESPONSE_CODE.BAD_REQUEST).json({
-            message: "Something went wrong 🥲"
-        });
-    }
 }
 
 const RegisterationWithPhoneVerfication = async (model : AuthModel, req : Request, res : Response) => {
@@ -237,4 +207,4 @@ const PhoneVerification = async (model : AuthModel, req : Request, res : Respons
 // verify email controller with jwt
 // verify phone number controller with jwt
 
-export { EmailPassswordAuthNoVerification, EmailPasswordAuthWithVerification, RegistrationWithEmailVerifcation, RegisterationWithPhoneVerfication, EmailVerification, PhoneVerification }
+export { EmailPassswordAuthNoVerification, EmailPasswordAuthWithVerification, RegisterationWithEmailVerifcation, RegisterationWithPhoneVerfication, EmailVerification, PhoneVerification }
