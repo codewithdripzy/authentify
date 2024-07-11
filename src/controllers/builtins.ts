@@ -192,24 +192,85 @@ const RegistrationWithEmailVerifcation = async (model : AuthModel, req : Request
         const validator = new Validator();
         const psw = new Password();
         const db = new DbORM(model.database);
+        const { email, password, confirmPassword } = req.body;
+        // check for email and password fields
+        if(email){
+            // validate email address
+            if(validator.isEmail(email)){
+                // check for password
+                if(password){
+                    // check if password and confirmPassword are the same
+                    if(password === confirmPassword){
+                        // validate model fields
+                        const missing_fields = model.validate(req.body, ["id", "access_code", "status", "created", "modified"]);
 
-        const [state, err] = model.validate(req.body);
-        // check for all model values except primary key and optional values
-        if(state){
-            const [state, data] = await db.add(model.name, req.body);
+                        // check for all model values except primary key and optional values
+                        if(missing_fields.length == 0){
+                            // create a new object removing confirmPassword, and optional fields
+                            const queryData : { [key : string] : any } = {};
 
-            if(state){
-                // data was successfully added to table, send mail to user
+                            for(const key in req.body){
+                                if(key !== "confirmPassword" && key !== "v" && !missing_fields.includes(key)){
+                                    queryData[key] = req.body[key];
+                                }
+                                // remove all fields that are not in the schema
+                            }
+
+                            // check if email exists
+                            if(!(await db.findOne(model.name, { email }))){
+                                // implicitly generate and set access_code value
+                                const state = await db.add(model.name, queryData) as boolean;
                 
+                                if(state){
+                                    const access_code = jwt.generateAccessCode(32);                                    
+                                    queryData["access_code"] = access_code;
+
+                                    // data was successfully added to table, send mail to user
+                                    const token = jwt.sign({ email, access_code }, model.options?.secret ?? "", { expiresIn: "1d" });
+                                    // const mail = await mailer.sendMail({
+                                    //     to: email,
+                                    //     subject: "Email Verification",
+                                    //     html: `<h1>Click the link below to verify your email address</h1><a href="${model.options?.verification_url ?? ""}?token=${token}">Verify Email</a>`
+                                    // });
+
+                                    console.log(access_code);
+                                    res.status(HTTP_RESPONSE_CODE.INTERNAL_SERVER_ERROR).json({
+                                        message: "Registering...."
+                                    });
+                                }else{
+                                    res.status(HTTP_RESPONSE_CODE.INTERNAL_SERVER_ERROR).json({
+                                        message: "Something went wrong while creating your account, Try again"
+                                    });
+                                }
+                            }else{
+                                res.status(HTTP_RESPONSE_CODE.BAD_REQUEST).json({
+                                    message: "Email Address is associated with another account, Try another email address"
+                                });
+                            }
+                        }else{
+                            res.status(HTTP_RESPONSE_CODE.BAD_REQUEST).json({
+                                message: "Fill out all required fields, we found some missing fields like " + missing_fields.join(", "),
+                            })
+                        }
+                    }else{
+                        res.status(HTTP_RESPONSE_CODE.BAD_REQUEST).json({
+                            message: "Passwords do not match",
+                        });
+                    }
+                }else{
+                    res.status(HTTP_RESPONSE_CODE.BAD_REQUEST).json({
+                        message: "Password is required",
+                    });
+                }
             }else{
-                res.status(HTTP_RESPONSE_CODE.INTERNAL_SERVER_ERROR).json({
-                    message: "Something went wrong while creating your account, Try again"
+                res.status(HTTP_RESPONSE_CODE.BAD_REQUEST).json({
+                    message: "Email Address is invalid",
                 });
             }
         }else{
             res.status(HTTP_RESPONSE_CODE.BAD_REQUEST).json({
-                message: "Fill out all required fields, we found some missing fields like " + err.join(", "),
-            })
+                message: "Email Address is required",
+            });
         }
     } catch (error) {
         res.status(HTTP_RESPONSE_CODE.BAD_REQUEST).json({

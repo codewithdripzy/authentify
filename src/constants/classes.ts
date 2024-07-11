@@ -37,12 +37,24 @@ class AuthModel{
 
     }
 
-    validate(reqBody : object) : [boolean, string[]]{
+    validate(reqBody : object, optionalFields : string[] = []) : string[]{
+        const missing_fields = [];
+
         for(const i in this.fields){
-            return [false, []];
+            const fld = this.fields[i];
+            
+            // skip fields that are in optionalFields
+            if(optionalFields.includes(fld.field)){
+                continue;
+            }else{
+                // check if field exists in reqBody
+                if(!reqBody.hasOwnProperty(fld.field)){
+                    missing_fields.push(fld.field);
+                }
+            }
         }
 
-        return [false, []];
+        return missing_fields;
     }
 }
 

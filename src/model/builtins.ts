@@ -33,6 +33,11 @@ class UserModel{
                     length : 32
                 },
                 {
+                    field : "othername",
+                    type : "VARCHAR",
+                    length : 32,
+                },
+                {
                     field : "username",
                     type : "VARCHAR",
                     length : 32

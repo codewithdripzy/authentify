@@ -155,7 +155,7 @@ class DbORM{
     database : MySQL | MongoDB | PostGres | MariaDB | SQLite | OracleDB | Snowflake | MicrosoftSQLServer;
 
     constructor(database : MySQL | MongoDB | PostGres | MariaDB | SQLite | OracleDB | Snowflake | MicrosoftSQLServer){
-        this.database = database
+        this.database = database;
     }
 
     async createDatabase(datb : string) : Promise<boolean> {
@@ -207,33 +207,37 @@ class DbORM{
         }
     }
 
-    async createTable({ table_name, fields } : ORMConfiguration){
-        switch(this.database.type){
-            case DatabaseType.MYSQL:
-                const db = await this.database.getConnection() as unknown as Connection;
-                let query = `CREATE TABLE IF NOT EXISTS ${table_name} (id INT(11) UNIQUE PRIMARY KEY AUTO_INCREMENT,`;
-                const parsedSql = SqlParser.parse(fields);
-
-                query += (parsedSql + ");");
-                
-                const [res, flds] = await db!.query(query) as [[], []];
-                console.log(res);
-                
-                break;
-        //     case "mongodb":
-        //         break;
-        //     case "postgresql":
-        //         break;
-        //     case "mariadb":
-        //         break;
-        //     case "sqlite3":
-        //         break;
-        //     case "oracle":
-        //         break;
-        //     case "mssql":
-        //         break;
-        //     case "snowflake":
-        //         break;
+    async createTable({ table_name, fields } : ORMConfiguration) : Promise<boolean>{
+        try {
+            switch(this.database.type){
+                case DatabaseType.MYSQL:
+                    const db = await this.database.getConnection() as unknown as Connection;
+                    let query = `CREATE TABLE IF NOT EXISTS ${table_name} (id INT(11) UNIQUE PRIMARY KEY AUTO_INCREMENT,`;
+                    const parsedSql = SqlParser.parse(fields);
+    
+                    query += (parsedSql + ");");
+                    
+                    const [res, flds] = await db!.query(query) as [[], []];
+                                    
+                    break;
+            //     case "mongodb":
+            //         break;
+            //     case "postgresql":
+            //         break;
+            //     case "mariadb":
+            //         break;
+            //     case "sqlite3":
+            //         break;
+            //     case "oracle":
+            //         break;
+            //     case "mssql":
+            //         break;
+            //     case "snowflake":
+            //         break;
+            }
+            return true;
+        } catch (error) {
+            return false;
         }
     }
 
@@ -307,8 +311,39 @@ class DbORM{
         }
     }
 
-    async add(table_name : string, values : { [key : string] : string }) : Promise<[boolean, { [key : string] : any}]>{
-        return [false, {}];
+    async add(table_name : string, data : { [key : string] : string }) : Promise<boolean>{
+        // check for database type
+
+        switch (this.database.type) {
+            case DatabaseType.MYSQL:
+                try {
+                    // check if table exists before adding values
+                    if(await this.tableExists(table_name)){
+                        const db = await this.database.getConnection() as unknown as Connection;
+                        const [parsedSql, values] = SqlParser.queryParse(data);
+                        const query = `INSERT INTO ${table_name} SET ${parsedSql}`;
+
+                        const [res, fields] = await db.query(query, values) as [[], []];
+                        
+                        if(res.length > 0){
+                            return true;
+                        }else{
+                            return false;
+                        }
+                    }else{
+                        // create table using model schema
+                        if(await this.createTable({ table_name, fields: []})){
+                            return true;
+                        }
+                    }
+                } catch (error) {
+                    console.log(error);
+                    return false;
+                }
+            case DatabaseType.MONGODB:
+                break;
+        }
+        return false;
     }
     
     dropTable(){

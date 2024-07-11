@@ -1,9 +1,8 @@
 import { Request, Response } from "express";
 import { Authenticator } from "../..";
 import { AuthModel } from "../../constants/classes";
-import { EmailPassswordAuthNoVerification, EmailPasswordAuthWithVerification, EmailVerification } from "../../controllers/builtins";
+import { EmailPassswordAuthNoVerification, EmailPasswordAuthWithVerification, EmailVerification, RegistrationWithEmailVerifcation } from "../../controllers/builtins";
 import { model } from "mongoose";
-import { RegisterationWithEmailVerifcation } from "../../controllers/mysql/auth";
 
 class Controller{
     private auth : Authenticator;
@@ -26,7 +25,7 @@ class Controller{
             name: "register",
             description: "Login a user",
             model: model,
-            handler : RegisterationWithEmailVerifcation
+            handler : RegistrationWithEmailVerifcation
         })
     }
 

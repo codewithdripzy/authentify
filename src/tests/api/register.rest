@@ -1,0 +1,15 @@
+POST http://localhost:3000/api/v1/auth/register
+Content-Type: application/json
+
+{
+    "firstname" : "Emmanuel",
+    "lastname" : "Bankole",
+    "othername" : "Oluwafikayomi",
+    "username" : "thecodeguyy",
+    "email" : "thecodeguyy@gmail.com",
+    "password" : "@Emmanuel2004",
+    "confirmPassword" : "@Emmanuel2004",
+    "tel" : "+2348132961144",
+    "gender" : 1,
+    "dob" : "2004-04-24"
+}

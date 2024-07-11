@@ -23,6 +23,24 @@ class SqlParser{
 
         return query;
     }
+
+    public static queryParse(data : { [key : string] : any}) : [string, any[]]{
+        let query = "";
+        const values : any[] = [];
+
+        // loop through object
+        for (const key in data){
+            if(Object.keys(data).indexOf(key) < Object.keys(data).length - 1){
+                query += `${key.toUpperCase()} = ?, `;
+            }else{
+                query += `${key.toUpperCase()} = ?;`;
+            }
+            
+            values.push(data[key]);
+        } 
+
+        return [query, values];
+    }
 }
 
 export default SqlParser;
